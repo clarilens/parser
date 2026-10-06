@@ -1,0 +1,50 @@
+{
+  "name": "clarilens/parser",
+  "description": "Extract evidence-backed facts from HTML, XML, and PDF sources.",
+  "type": "library",
+  "license": "MIT",
+  "keywords": [
+    "parser",
+    "extraction",
+    "html",
+    "xml",
+    "pdf"
+  ],
+  "homepage": "https://github.com/clarilens/parser",
+  "support": {
+    "issues": "https://github.com/clarilens/parser/issues",
+    "source": "https://github.com/clarilens/parser"
+  },
+  "autoload": {
+    "psr-4": {
+      "Clarilens\\Parser\\": "src/"
+    }
+  },
+  "scripts": {
+    "test": "phpunit",
+    "cs:check": "php-cs-fixer fix --dry-run --diff --using-cache=no --sequential",
+    "cs:fix": "php-cs-fixer fix --sequential",
+    "psalm": "psalm --no-progress --threads=1"
+  },
+  "authors": [
+    {
+      "name": "Farkhat Sakibaev",
+      "email": "farkhatlukum@gmail.com"
+    }
+  ],
+  "require": {
+    "php": "^8.5",
+    "ext-dom": "*",
+    "ext-libxml": "*",
+    "smalot/pdfparser": "^2.12",
+    "symfony/http-foundation": "^7.4 || ^8.0",
+    "symfony/http-client": "^7.4 || ^8.1",
+    "ext-ctype": "*",
+    "symfony/css-selector": "^7.4 || ^8.0"
+  },
+  "require-dev": {
+    "friendsofphp/php-cs-fixer": "^3",
+    "vimeo/psalm": "^6",
+    "phpunit/phpunit": "^12"
+  }
+}

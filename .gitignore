@@ -1,0 +1,8 @@
+.idea
+vendor
+node_modules
+dist
+.php-cs-fixer.cache
+.psalm-cache/
+
+.phpunit.result.cache
