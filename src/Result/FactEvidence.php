@@ -13,7 +13,7 @@ final readonly class FactEvidence
         public string $url,
         public DateTimeImmutable $observedAt,
         public string $wording,
-        public NodeLocation|PageLocation|JsonLocation|null $location = null,
+        public NodeLocation|PageLocation|JsonLocation|TextLocation|TableLocation|null $location = null,
         public ?string $sourceId = null,
         public ?string $applicability = null,
     ) {
@@ -30,6 +30,8 @@ final readonly class FactEvidence
         $location = match (true) {
             $this->location instanceof NodeLocation => ['nodePath' => $this->location->nodePath],
             $this->location instanceof JsonLocation => ['nodePath' => $this->location->nodePath, 'pointer' => $this->location->pointer],
+            $this->location instanceof TextLocation => ['nodePath' => $this->location->nodePath, 'offset' => $this->location->offset],
+            $this->location instanceof TableLocation => ['nodePath' => $this->location->nodePath, 'row' => $this->location->row, 'column' => $this->location->column, 'originRow' => $this->location->originRow, 'originColumn' => $this->location->originColumn, 'header' => $this->location->header],
             $this->location instanceof PageLocation => ['page' => $this->location->page],
             default => null,
         };
@@ -63,7 +65,13 @@ final readonly class FactEvidence
         }
         $place = null;
         if ($location !== null) {
-            if (isset($location['pointer']) && is_string($location['nodePath'] ?? null) && is_string($location['pointer'])) {
+            if (is_int($location['row'] ?? null) && is_int($location['column'] ?? null)
+                && is_int($location['originRow'] ?? null) && is_int($location['originColumn'] ?? null)
+                && is_string($location['header'] ?? null) && is_string($location['nodePath'] ?? null)) {
+                $place = new TableLocation($location['nodePath'], $location['row'], $location['column'], $location['originRow'], $location['originColumn'], $location['header']);
+            } elseif (isset($location['offset']) && is_string($location['nodePath'] ?? null) && is_int($location['offset']) && $location['offset'] >= 0) {
+                $place = new TextLocation($location['nodePath'], $location['offset']);
+            } elseif (isset($location['pointer']) && is_string($location['nodePath'] ?? null) && is_string($location['pointer'])) {
                 $place = new JsonLocation($location['nodePath'], $location['pointer']);
             } elseif (is_string($location['nodePath'] ?? null)) {
                 $place = new NodeLocation($location['nodePath']);

@@ -14,6 +14,7 @@ export interface RenderRequest {
   timeoutMs: number;
   allowLocalFile: boolean;
   allowedHosts: string[];
+  repeat: {click: string; items: string; maxClicks: number} | null;
 }
 
 export const RENDER_LIMITS = {
@@ -64,6 +65,14 @@ export function parseRenderRequest(input: unknown): RenderRequest {
     return { type: 'click', selector: selector(item.selector) };
   });
   const ready = record(value.ready ?? { selector: null });
+  let repeat: RenderRequest['repeat'] = null;
+  if (value.repeat !== undefined) {
+    const spec = record(value.repeat);
+    if (!Number.isInteger(spec.maxClicks) || (spec.maxClicks as number) < 1 || (spec.maxClicks as number) > 50) {
+      throw new Error('Invalid repeat limit');
+    }
+    repeat = {click: selector(spec.click), items: selector(spec.items), maxClicks: spec.maxClicks as number};
+  }
   return {
     url: value.url,
     actions: parsedActions,
@@ -71,5 +80,6 @@ export function parseRenderRequest(input: unknown): RenderRequest {
     timeoutMs: timeoutMs as number,
     allowLocalFile,
     allowedHosts,
+    repeat,
   };
 }

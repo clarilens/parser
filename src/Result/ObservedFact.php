@@ -14,11 +14,27 @@ final readonly class ObservedFact
         public string $value,
         public FactEvidence $evidence,
         public ?string $groupKey = null,
+        /** @var list<FactEvidence> */
+        public array $evidences = [],
+        public ?string $rawInput = null,
+        /** @var list<string> */
+        public array $operations = [],
     ) {
         Checks::field($field);
         if ($value === '' || ($groupKey !== null && $groupKey === '')) {
             throw new InvalidArgumentException('Invalid observed fact.');
         }
+        foreach ($evidences as $item) {
+            if (!$item instanceof FactEvidence) {
+                throw new InvalidArgumentException('Invalid fact evidence list.');
+            }
+        }
+    }
+
+    /** @return non-empty-list<FactEvidence> */
+    public function allEvidence(): array
+    {
+        return $this->evidences === [] ? [$this->evidence] : $this->evidences;
     }
 
     /** @return array<string, mixed> */
@@ -28,6 +44,9 @@ final readonly class ObservedFact
             'field' => $this->field,
             'value' => $this->value,
             'evidence' => $this->evidence->toArray(),
+            'evidences' => array_map(static fn (FactEvidence $item): array => $item->toArray(), $this->allEvidence()),
+            ...($this->rawInput === null ? [] : ['rawInput' => $this->rawInput]),
+            ...($this->operations === [] ? [] : ['operations' => $this->operations]),
             ...($this->groupKey === null ? [] : ['groupKey' => $this->groupKey]),
         ];
     }
@@ -44,6 +63,9 @@ final readonly class ObservedFact
             $data['value'],
             FactEvidence::fromArray($data['evidence'] ?? null),
             $data['groupKey'] ?? null,
+            isset($data['evidences']) && is_array($data['evidences']) ? array_map(FactEvidence::fromArray(...), $data['evidences']) : [],
+            $data['rawInput'] ?? null,
+            $data['operations'] ?? [],
         );
     }
 }

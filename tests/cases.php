@@ -170,7 +170,7 @@ $cases = [
         same(true, $batch->facts[0]->evidence->location->nodePath !== '');
         same($batch->toArray(), ObservedFactBatch::fromJson($batch->toJson())->toArray());
         $unknownVersion = $batch->toArray();
-        $unknownVersion['schemaVersion'] = 2;
+        $unknownVersion['schemaVersion'] = 3;
         rejects(static fn () => ObservedFactBatch::fromArray($unknownVersion));
         rejects(static fn () => ObservedFactBatch::fromOutcome((new DocumentParser())->parse(new ParseRequest($config, '<strong>7%</strong>')), 'catalog-a', 'v1', 'v1'));
     },

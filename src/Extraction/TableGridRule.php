@@ -19,15 +19,16 @@ final readonly class TableGridRule
         public string $name,
         public string $selector,
         public bool $required = true,
-        public string $syntax = 'css',
+        public string $syntax = SelectorSyntax::Css->value,
     ) {
         Checks::field($name);
         Checks::selector($selector);
-        if (!in_array($syntax, ['css', 'xpath'], true)) {
+        $selectorSyntax = SelectorSyntax::tryFrom($syntax);
+        if ($selectorSyntax === null) {
             throw new InvalidArgumentException('Invalid table selector syntax.');
         }
         try {
-            $this->xpath = $syntax === 'css' ? (new CssSelectorConverter())->toXPath($selector) : $selector;
+            $this->xpath = $selectorSyntax === SelectorSyntax::Css ? (new CssSelectorConverter())->toXPath($selector) : $selector;
         } catch (\Throwable $error) {
             throw new InvalidArgumentException('Invalid table selector.', previous: $error);
         }
@@ -75,7 +76,7 @@ final readonly class TableGridRule
                             if (isset($grid[$r][$c])) {
                                 throw new InvalidArgumentException('Overlapping table cells.');
                             }
-                            $grid[$r][$c] = new TableCell($r, $c, $text, $cell->getNodePath());
+                            $grid[$r][$c] = new TableCell($r, $c, $text, $cell->getNodePath(), $rowIndex, $column);
                         }
                     }
                     $column += $colSpan;
@@ -109,10 +110,10 @@ final readonly class TableGridRule
         if (!is_array($data) || !is_string($data['name'] ?? null)
             || !is_string($data['selector'] ?? null)
             || !is_bool($data['required'] ?? true)
-            || !is_string($data['syntax'] ?? 'css')) {
+            || !is_string($data['syntax'] ?? SelectorSyntax::Css->value)) {
             throw new InvalidArgumentException('Invalid table grid rule.');
         }
-        return new self($data['name'], $data['selector'], $data['required'] ?? true, $data['syntax'] ?? 'css');
+        return new self($data['name'], $data['selector'], $data['required'] ?? true, $data['syntax'] ?? SelectorSyntax::Css->value);
     }
 
     /** @return array{name: string, selector: string, required: bool, syntax: string} */

@@ -10,7 +10,7 @@ use JsonException;
 
 final readonly class ObservedFactBatch
 {
-    public const int SCHEMA_VERSION = 1;
+    public const int SCHEMA_VERSION = 2;
 
     /** @param list<ObservedFact> $facts */
     public function __construct(
@@ -20,6 +20,13 @@ final readonly class ObservedFactBatch
         public DateTimeImmutable $observedAt,
         public bool $complete,
         public array $facts,
+        /** @var list<FactResolution> */
+        public array $resolutions = [],
+        /** @var array<string, bool> */
+        public array $groupCompleteness = [],
+        public ?string $configHash = null,
+        public ?string $registryFingerprint = null,
+        public ?int $configSchemaVersion = null,
     ) {
         if (trim($sourceId) === '' || trim($sourceVersion) === '' || trim($parserVersion) === ''
             || !array_is_list($facts)) {
@@ -28,6 +35,19 @@ final readonly class ObservedFactBatch
         foreach ($facts as $fact) {
             if (!$fact instanceof ObservedFact || ($fact->evidence->sourceId !== null && $fact->evidence->sourceId !== $sourceId)) {
                 throw new InvalidArgumentException('Fact belongs to another source.');
+            }
+        }
+        if (!array_is_list($resolutions)) {
+            throw new InvalidArgumentException('Invalid fact resolutions.');
+        }
+        foreach ($resolutions as $resolution) {
+            if (!$resolution instanceof FactResolution) {
+                throw new InvalidArgumentException('Invalid fact resolution.');
+            }
+        }
+        foreach ($groupCompleteness as $group => $state) {
+            if (!is_string($group) || !is_bool($state)) {
+                throw new InvalidArgumentException('Invalid group completeness.');
             }
         }
     }
@@ -63,6 +83,11 @@ final readonly class ObservedFactBatch
             'observedAt' => $this->observedAt->format(DATE_ATOM),
             'complete' => $this->complete,
             'facts' => array_map(static fn (ObservedFact $fact): array => $fact->toArray(), $this->facts),
+            'resolutions' => array_map(static fn (FactResolution $resolution): array => $resolution->toArray(), $this->resolutions),
+            'groupCompleteness' => $this->groupCompleteness,
+            'configHash' => $this->configHash,
+            'registryFingerprint' => $this->registryFingerprint,
+            'configSchemaVersion' => $this->configSchemaVersion,
         ];
     }
 
@@ -80,13 +105,18 @@ final readonly class ObservedFactBatch
 
     public static function fromArray(mixed $data): self
     {
-        if (!is_array($data) || ($data['schemaVersion'] ?? null) !== self::SCHEMA_VERSION
+        if (!is_array($data) || !in_array($data['schemaVersion'] ?? null, [1, self::SCHEMA_VERSION], true)
             || !is_string($data['sourceId'] ?? null)
             || !is_string($data['sourceVersion'] ?? null)
             || !is_string($data['parserVersion'] ?? null)
             || !is_string($data['observedAt'] ?? null)
             || !is_bool($data['complete'] ?? null)
-            || !is_array($data['facts'] ?? null) || !array_is_list($data['facts'])) {
+            || !is_array($data['facts'] ?? null) || !array_is_list($data['facts'])
+            || !is_array($data['resolutions'] ?? []) || !array_is_list($data['resolutions'] ?? [])
+            || !is_array($data['groupCompleteness'] ?? [])
+            || (isset($data['configHash']) && !is_string($data['configHash']))
+            || (isset($data['registryFingerprint']) && !is_string($data['registryFingerprint']))
+            || (isset($data['configSchemaVersion']) && !is_int($data['configSchemaVersion']))) {
             throw new InvalidArgumentException('Invalid observed fact batch.');
         }
         try {
@@ -101,6 +131,11 @@ final readonly class ObservedFactBatch
             $observedAt,
             $data['complete'],
             array_map(ObservedFact::fromArray(...), $data['facts']),
+            array_map(FactResolution::fromArray(...), $data['resolutions'] ?? []),
+            $data['groupCompleteness'] ?? [],
+            $data['configHash'] ?? null,
+            $data['registryFingerprint'] ?? null,
+            $data['configSchemaVersion'] ?? null,
         );
     }
 }

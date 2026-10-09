@@ -52,7 +52,27 @@ async function render(request: RenderRequest): Promise<string> {
         }
         const html = await page.content();
         if (Buffer.byteLength(html) > RENDER_LIMITS.maxHtmlBytes) throw new Error('Rendered HTML is too large');
-        return html;
+        if (!request.repeat) return html;
+        const frames = [html];
+        let sequenceBytes = Buffer.byteLength(html);
+        for (let click = 0; click < request.repeat.maxClicks; click++) {
+            if (await page.locator(request.repeat.click).count() === 0) break;
+            const previous = await page.locator(request.repeat.items).count();
+            await page.locator(request.repeat.click).click();
+            try {
+                await page.waitForFunction(({selector, count}) => document.querySelectorAll(selector).length > count,
+                    {selector: request.repeat.items, count: previous}, {timeout: request.timeoutMs});
+            } catch {
+                // Preserve the stalled DOM; the crawl runner reports no_progress.
+            }
+            const next = await page.content();
+            if (Buffer.byteLength(next) > RENDER_LIMITS.maxHtmlBytes) throw new Error('Rendered HTML is too large');
+            sequenceBytes += Buffer.byteLength(next);
+            if (sequenceBytes > 20_000_000) throw new Error('Browser sequence is too large');
+            frames.push(next);
+            if (await page.locator(request.repeat.items).count() <= previous) break;
+        }
+        return JSON.stringify({frames});
     } finally {
         await browser.close();
     }

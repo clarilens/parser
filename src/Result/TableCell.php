@@ -11,6 +11,8 @@ final readonly class TableCell
         public int $column,
         public string $text,
         public string $nodePath,
+        public ?int $originRow = null,
+        public ?int $originColumn = null,
     ) {
     }
 }

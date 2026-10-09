@@ -148,7 +148,7 @@ final class RuleRegistry
 
     private static function textMode(array $data): NodeTextMode
     {
-        $mode = $data['textMode'] ?? 'all';
+        $mode = $data['textMode'] ?? NodeTextMode::All->value;
         if (!is_string($mode) || ($selected = NodeTextMode::tryFrom($mode)) === null) {
             throw new InvalidArgumentException('Invalid text mode.');
         }
